@@ -533,7 +533,8 @@ static void AFNetworkReachabilityReleaseCallback(const void *info) {
             continue;
         }
         
-        if ((!method || [method isEqualToString:[[(AFHTTPRequestOperation *)operation request] HTTPMethod]]) && [path isEqualToString:[[[(AFHTTPRequestOperation *)operation request] URL] path]]) {
+        if ((!method || [method isEqualToString:[[(AFHTTPRequestOperation *)operation request] HTTPMethod]]) &&
+            (!path || [path isEqualToString:[[[(AFHTTPRequestOperation *)operation request] URL] path]])) {
             [operation cancel];
         }
     }
