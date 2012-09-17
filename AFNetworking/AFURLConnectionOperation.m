@@ -179,7 +179,11 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
     self.request = urlRequest;
     
     self.outputStream = [NSOutputStream outputStreamToMemory];
-        
+    NSRunLoop *runLoop = [NSRunLoop currentRunLoop];
+    for (NSString *runLoopMode in self.runLoopModes) {
+        [self.outputStream scheduleInRunLoop:runLoop forMode:runLoopMode];
+    }
+    
     self.state = AFOperationReadyState;
 	
     return self;
@@ -253,7 +257,7 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
 }
 
 - (void)setOutputStream:(NSOutputStream *)outputStream {
-    if (outputStream == _outputStream) {
+    if (_outputStream == outputStream) {
         return;
     }
     
