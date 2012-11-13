@@ -144,6 +144,7 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
 @synthesize backgroundTaskIdentifier = _backgroundTaskIdentifier;
 @synthesize uploadProgress = _uploadProgress;
 @synthesize downloadProgress = _downloadProgress;
+@synthesize progressCallbackQueue = _progressCallbackQueue;
 @synthesize authenticationAgainstProtectionSpace = _authenticationAgainstProtectionSpace;
 @synthesize authenticationChallenge = _authenticationChallenge;
 @synthesize cacheResponse = _cacheResponse;
@@ -195,6 +196,13 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
 }
 
 - (void)dealloc {
+    if (_progressCallbackQueue) {
+#if !OS_OBJECT_USE_OBJC
+        dispatch_release(_progressCallbackQueue);
+#endif
+        _progressCallbackQueue = NULL;
+    }
+    
     if (_outputStream) {
         [_outputStream close];
         _outputStream = nil;
@@ -278,6 +286,25 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
 
 - (void)setDownloadProgressBlock:(void (^)(NSUInteger bytesRead, long long totalBytesRead, long long totalBytesExpectedToRead))block {
     self.downloadProgress = block;
+}
+
+- (void)setProgressCallbackQueue:(dispatch_queue_t)progressCallbackQueue
+{
+    if (progressCallbackQueue != _progressCallbackQueue) {
+        if (_progressCallbackQueue) {
+#if !OS_OBJECT_USE_OBJC
+            dispatch_release(_progressCallbackQueue);
+#endif
+            _progressCallbackQueue = NULL;
+        }
+
+        if (progressCallbackQueue) {
+#if !OS_OBJECT_USE_OBJC
+            dispatch_retain(progressCallbackQueue);
+#endif
+            _progressCallbackQueue = progressCallbackQueue;
+        }
+    }
 }
 
 - (void)setAuthenticationAgainstProtectionSpaceBlock:(BOOL (^)(NSURLConnection *, NSURLProtectionSpace *))block {
@@ -522,7 +549,7 @@ didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
 totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite
 {
     if (self.uploadProgress) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_async(self.progressCallbackQueue ?: dispatch_get_main_queue(), ^{
             self.uploadProgress(bytesWritten, totalBytesWritten, totalBytesExpectedToWrite);
         });
     }
@@ -547,7 +574,7 @@ didReceiveResponse:(NSURLResponse *)response
     }
     
     if (self.downloadProgress) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_async(self.progressCallbackQueue ?: dispatch_get_main_queue(), ^{
             self.downloadProgress([data length], self.totalBytesRead, self.response.expectedContentLength);
         });
     }
