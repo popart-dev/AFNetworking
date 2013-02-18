@@ -229,8 +229,13 @@ NSCoding, NSCopying>
 #endif
 
 ///---------------------------------
-/// @name Setting Progress Callbacks
+/// @name Configuring Progress Callbacks
 ///---------------------------------
+
+/**
+ The callback dispatch queue for progress updates. If `NULL` (default), the main queue is used.
+ */
+@property (nonatomic, assign) dispatch_queue_t progressCallbackQueue;
 
 /**
  Sets a callback to be called when an undetermined number of bytes have been uploaded to the server.

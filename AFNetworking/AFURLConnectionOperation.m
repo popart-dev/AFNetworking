@@ -148,6 +148,7 @@ static inline BOOL AFStateTransitionIsValid(AFOperationState fromState, AFOperat
 @synthesize shouldUseCredentialStorage = _shouldUseCredentialStorage;
 @synthesize userInfo = _userInfo;
 @synthesize backgroundTaskIdentifier = _backgroundTaskIdentifier;
+@synthesize progressCallbackQueue = _progressCallbackQueue;
 @synthesize uploadProgress = _uploadProgress;
 @synthesize downloadProgress = _downloadProgress;
 @synthesize authenticationAgainstProtectionSpace = _authenticationAgainstProtectionSpace;
@@ -611,7 +612,7 @@ didReceiveAuthenticationChallenge:(NSURLAuthenticationChallenge *)challenge
 totalBytesExpectedToWrite:(NSInteger)totalBytesExpectedToWrite
 {
     if (self.uploadProgress) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_async(self.progressCallbackQueue ?: dispatch_get_main_queue(), ^{
             self.uploadProgress((NSUInteger)bytesWritten, totalBytesWritten, totalBytesExpectedToWrite);
         });
     }
@@ -636,7 +637,7 @@ didReceiveResponse:(NSURLResponse *)response
     }
 
     if (self.downloadProgress) {
-        dispatch_async(dispatch_get_main_queue(), ^{
+        dispatch_async(self.progressCallbackQueue ?: dispatch_get_main_queue(), ^{
             self.downloadProgress([data length], self.totalBytesRead, self.response.expectedContentLength);
         });
     }
